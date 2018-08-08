@@ -18,15 +18,12 @@ import java.io.File;
 @Controller
 public class MailGunService {
     @Value("${sending.mail.mailgun.url}")
-    @NotEmpty
     private String mailGunUrl;
 
     @Value("${sending.mail.mailgun.user.header.value}")
-    @NotEmpty
     private String userHeaderValue;
 
     @Value("${sending.mail.mailgun.user.header.authorization.value}")
-    @NotEmpty
     private String authorizationHeaderValue;
 
     private final Logger logger = LoggerFactory.getLogger(EmailService.class);
@@ -63,13 +60,13 @@ public class MailGunService {
             map.add("to", recipient);
         }
 
-        if(email.getCC() != null && ! email.getCC().equals("")) {
+        if(email.getCC() != null) {
             for (String ccRecipient : email.getCC()) {
                 map.add("cc", ccRecipient);
             }
         }
 
-        if(email.getBCC() != null && ! email.getBCC().equals("")) {
+        if(email.getBCC() != null) {
             for (String bccRecipient: email.getBCC()) {
                 map.add("bcc", bccRecipient);
             }
@@ -77,7 +74,7 @@ public class MailGunService {
 
         map.add("subject", email.getSubject());
         map.add("text", email.getMessage());
-        map.add("attachment", new File("C:/Users/Moataz ElKhawass/Desktop/zizo_pics_2018/b0a391bdf25510f10b2b91d93ee19ef7.jpg"));
+
         return map;
     }
 }

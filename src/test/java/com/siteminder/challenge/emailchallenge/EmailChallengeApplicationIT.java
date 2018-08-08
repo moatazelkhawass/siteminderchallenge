@@ -2,7 +2,6 @@ package com.siteminder.challenge.emailchallenge;
 
 import com.siteminder.challenge.emailchallenge.model.EMailModel;
 import com.siteminder.challenge.emailchallenge.model.EmailResponseModel;
-//import com.sun.istack.internal.logging.Logger;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,7 +23,7 @@ public class EmailChallengeApplicationIT {
     @Autowired
     private TestRestTemplate restTemplate;
 
-    EMailModel request = new EMailModel();
+    private EMailModel request = new EMailModel();
 
     @Before
     public void prepareRequest(){

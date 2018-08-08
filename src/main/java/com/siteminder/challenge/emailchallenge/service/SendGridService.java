@@ -1,81 +1,133 @@
 package com.siteminder.challenge.emailchallenge.service;
 
-import com.sendgrid.*;
 import com.siteminder.challenge.emailchallenge.model.EMailModel;
 import com.siteminder.challenge.emailchallenge.model.EmailResponseModel;
+import com.siteminder.challenge.emailchallenge.model.sendgrid.ContentModel;
+import com.siteminder.challenge.emailchallenge.model.sendgrid.EmailAddressModel;
+import com.siteminder.challenge.emailchallenge.model.sendgrid.PersonalizationModel;
+import com.siteminder.challenge.emailchallenge.model.sendgrid.SendGridRequestModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.client.RestTemplate;
 
-import javax.validation.constraints.NotEmpty;
+import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 public class SendGridService {
     private final Logger logger = LoggerFactory.getLogger(SendGridService.class);
 
     @Value("${sending.mail.sendgrid.authorization.api.key}")
-    @NotEmpty
     private String apiKey;
 
-    public EmailResponseModel sendMail(EMailModel email) throws Exception{
+    @Value("${sending.mail.sendgrid.url}")
+    private String url;
+
+    public EmailResponseModel sendMail(EMailModel email){
         logger.info("SendGridService... Starting sendMail");
 
-        EmailResponseModel responseModel = null;
-        Mail mail = setMailSettings(email);
-        SendGrid sg = new SendGrid(apiKey);
-        Request request = new Request();
+        HttpHeaders headers = setHeaders();
 
-        request.setMethod(Method.POST);
-        request.setEndpoint("mail/send");
-        request.setBody(mail.build());
-        Response response = sg.api(request);
+        SendGridRequestModel sendGridRequest = buildSendGridRequest(email);
 
-        responseModel = new EmailResponseModel();
-        responseModel.setMessage("Queued. Thank you.");
+        HttpEntity request = new HttpEntity(sendGridRequest, headers);
+        RestTemplate restTemplate = new RestTemplate();
 
-        logger.info("SendGridService... Finishing sendMail");
+        EmailResponseModel response = restTemplate.postForObject(url, request, EmailResponseModel.class);
 
-        return responseModel;
+        logger.info("MailGunService... Finishing sendMail");
+
+        return response;
     }
 
-    private Mail setMailSettings(EMailModel emailModel){
-        Email from = new Email(emailModel.getFrom());
-        from.setName(emailModel.getSender());
-
-        Content content = new Content("text/plain", emailModel.getMessage());
-        Mail mail = new Mail();
-
-        mail.setFrom(from);
-        mail.setSubject(emailModel.getSubject());
-        mail.addPersonalization(setPersonalization(emailModel));
-        mail.addContent(content);
-
-        return mail;
+    private HttpHeaders setHeaders(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+        headers.set("Authorization", "Bearer " + apiKey);
+        return headers;
     }
 
-    private Personalization setPersonalization(EMailModel emailModel){
-        Personalization personalization = new Personalization();
+    private SendGridRequestModel buildSendGridRequest(EMailModel email){
+        SendGridRequestModel sendGridRequest = new SendGridRequestModel();
+        PersonalizationModel personalization = buildPersonalization(email);
+        EmailAddressModel emailAddressModel;
 
-        for (String emailAddress: emailModel.getTo()) {
-            personalization.addTo(new Email(emailAddress));
-        }
+        List<PersonalizationModel> personalizationModels = new ArrayList<>();
+        personalizationModels.add(personalization);
 
-        if(emailModel.getCC() != null && ! emailModel.getCC().equals("")){
-            for (String emailAddress: emailModel.getCC()) {
-                if(! emailModel.getTo().contains(emailAddress)) {
-                    personalization.addCc(new Email(emailAddress));
-                }
-            }
-        }
+        emailAddressModel = new EmailAddressModel(email.getFrom());
+        emailAddressModel.setName(email.getSender());
 
-        if(emailModel.getBCC() != null && ! emailModel.getBCC().equals("")){
-            for (String emailAddress: emailModel.getBCC()) {
-                if(! emailModel.getTo().contains(emailAddress) && ! emailModel.getCC().contains(emailAddress)) {
-                    personalization.addBcc(new Email(emailAddress));
-                }
-            }
-        }
+        ContentModel content = new ContentModel(email.getMessage());
+
+        sendGridRequest.setPersonalizations(personalizationModels);
+        sendGridRequest.setFrom(emailAddressModel);
+        sendGridRequest.setSubject(email.getSubject());
+        sendGridRequest.setContent(content);
+
+        return sendGridRequest;
+    }
+
+    private PersonalizationModel buildPersonalization(EMailModel email){
+        PersonalizationModel personalization = new PersonalizationModel();
+        List<EmailAddressModel> listOfMails = buildTo(email);
+
+        personalization.setTo(listOfMails);
+
+        listOfMails = buildCC(email);
+        if(listOfMails.size() > 0)
+            personalization.setCc(listOfMails);
+
+        listOfMails = buildBCC(email);
+        if(listOfMails.size() > 0)
+            personalization.setBcc(listOfMails);
+
         return personalization;
+    }
+
+    private List<EmailAddressModel> buildTo(EMailModel email){
+        List<EmailAddressModel> listOfMails = new ArrayList<>();
+        EmailAddressModel emailAddressModel;
+        for (String emailAddress : email.getTo()) {
+            emailAddressModel = new EmailAddressModel(emailAddress);
+            listOfMails.add(emailAddressModel);
+        }
+        return listOfMails;
+    }
+
+    private List<EmailAddressModel> buildCC(EMailModel email){
+        List<EmailAddressModel> listOfMails = new ArrayList<>();
+        if(email.getCC() != null){
+            listOfMails = new ArrayList<>();
+            EmailAddressModel emailAddressModel;
+            for (String emailAddress : email.getCC()) {
+                if(! email.getTo().contains(emailAddress)) {
+                    emailAddressModel = new EmailAddressModel(emailAddress);
+                    listOfMails.add(emailAddressModel);
+                }
+            }
+        }
+
+        return listOfMails;
+    }
+
+    private List<EmailAddressModel> buildBCC(EMailModel email){
+        List<EmailAddressModel> listOfMails = new ArrayList<>();
+        if(email.getBCC() != null) {
+            listOfMails = new ArrayList<>();
+            EmailAddressModel emailAddressModel;
+            for (String emailAddress : email.getBCC()) {
+                if(! email.getTo().contains(emailAddress) && ! email.getCC().contains(emailAddress)) {
+                    emailAddressModel = new EmailAddressModel(emailAddress);
+                    listOfMails.add(emailAddressModel);
+                }
+            }
+        }
+
+        return listOfMails;
     }
 }

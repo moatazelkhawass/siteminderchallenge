@@ -20,7 +20,7 @@ public class EmailController {
     private final Logger logger = LoggerFactory.getLogger(EmailController.class);
 
     @PostMapping(path="/send-email")
-    public EmailResponseModel sendEmail(@Valid @RequestBody EMailModel email) throws Exception{
+    public EmailResponseModel sendEmail(@Valid @RequestBody EMailModel email){
         logger.info("Request received... Sender is " + email.getSender());
         EmailResponseModel responseModel = emailService.sendMail(email);
         logger.info("Response received from backend.. sending response back");

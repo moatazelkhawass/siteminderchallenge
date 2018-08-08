@@ -8,14 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
 @Controller
 public class EmailService {
     @Value("${mail.service.active}")
-    @NotEmpty
-    @NotNull
     private String activeMailService;
 
     @Autowired
@@ -26,7 +21,7 @@ public class EmailService {
 
     private final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    public EmailResponseModel sendMail(EMailModel email) throws Exception{
+    public EmailResponseModel sendMail(EMailModel email) {
         logger.info("Starting sendMail");
         EmailResponseModel responseModel;
 
