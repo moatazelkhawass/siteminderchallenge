@@ -1,5 +1,6 @@
 package com.siteminder.challenge.emailchallenge.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.siteminder.challenge.emailchallenge.model.EMailModel;
 import com.siteminder.challenge.emailchallenge.model.EmailResponseModel;
 import com.siteminder.challenge.emailchallenge.model.sendgrid.ContentModel;
@@ -37,7 +38,15 @@ public class SendGridService {
         HttpEntity request = new HttpEntity(sendGridRequest, headers);
         RestTemplate restTemplate = new RestTemplate();
 
-        EmailResponseModel response = restTemplate.postForObject(url, request, EmailResponseModel.class);
+        try {
+            logger.info("The request is " + new ObjectMapper().writeValueAsString(sendGridRequest));
+        }
+        catch (Exception ex){
+            ex.printStackTrace();
+        }
+
+        restTemplate.postForObject(url, request, EmailResponseModel.class);
+        EmailResponseModel response = new EmailResponseModel("Queued. Thank you.");
 
         logger.info("MailGunService... Finishing sendMail");
 
@@ -62,7 +71,9 @@ public class SendGridService {
         emailAddressModel = new EmailAddressModel(email.getFrom());
         emailAddressModel.setName(email.getSender());
 
-        ContentModel content = new ContentModel(email.getMessage());
+        ContentModel contentModel = new ContentModel(email.getMessage());
+        List<ContentModel> content = new ArrayList<>();
+        content.add(contentModel);
 
         sendGridRequest.setPersonalizations(personalizationModels);
         sendGridRequest.setFrom(emailAddressModel);

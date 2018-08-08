@@ -6,7 +6,7 @@ public class SendGridRequestModel {
     private List<PersonalizationModel> personalizations;
     private EmailAddressModel from;
     private String subject;
-    private ContentModel content;
+    private List<ContentModel> content;
 
     public List<PersonalizationModel> getPersonalizations() {
         return personalizations;
@@ -32,11 +32,11 @@ public class SendGridRequestModel {
         this.subject = subject;
     }
 
-    public ContentModel getContent() {
+    public List<ContentModel> getContent() {
         return content;
     }
 
-    public void setContent(ContentModel content) {
+    public void setContent(List<ContentModel> content) {
         this.content = content;
     }
 }
